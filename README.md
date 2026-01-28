@@ -30,6 +30,24 @@ Stations:
 curl http://127.0.0.1:8000/api/stations
 ```
 
+Analytics summary:
+
+```bash
+curl "http://127.0.0.1:8000/api/analytics/summary?stations=66062&start_year=1859&end_year=1862"
+```
+
+Monthly data:
+
+```bash
+curl "http://127.0.0.1:8000/api/data/monthly?stations=66062&start_year=1859&end_year=1862"
+```
+
+Annual data:
+
+```bash
+curl "http://127.0.0.1:8000/api/data/annual?stations=66062&start_year=1859&end_year=1862&include_std=true"
+```
+
 ## Docker
 
 Build and run:
