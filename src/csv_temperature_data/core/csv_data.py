@@ -107,6 +107,18 @@ def station_set(csv_path: str) -> frozenset[str]:
     return stations_set
 
 
+def data_year_range(csv_path: str) -> dict[str, int | None]:
+    df, _, _ = _STORE.get(csv_path)
+    years = df.get("Year")
+    if years is None:
+        return {"min_year": None, "max_year": None}
+    cleaned = years.dropna()
+    if cleaned.empty:
+        return {"min_year": None, "max_year": None}
+    vals = cleaned.astype(int, copy=False).to_numpy(copy=False)
+    return {"min_year": int(vals.min()), "max_year": int(vals.max())}
+
+
 def analytics_summary(
     csv_path: str,
     *,

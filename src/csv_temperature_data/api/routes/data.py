@@ -3,7 +3,8 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Query
 
 from csv_temperature_data.core.config import settings
-from csv_temperature_data.core.csv_data import annual_data, monthly_data, station_set
+from csv_temperature_data.core.csv_data import annual_data, data_year_range, monthly_data
+from csv_temperature_data.api.utils import ensure_stations_exist, parse_stations_param, validate_year_range
 
 router = APIRouter(prefix="/data", tags=["data"])
 
@@ -17,23 +18,25 @@ _MISSING_STATIONS_404 = {
 }
 
 
+@router.get("/range")
+def get_range() -> dict[str, int | None]:
+    try:
+        return data_year_range(settings.csv_path)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=500, detail=f"CSV_PATH not found: {settings.csv_path}") from e
+
+
 @router.get("/monthly", responses={404: _MISSING_STATIONS_404})
 def get_monthly(
     stations: str = Query(..., description="Comma-separated station numbers"),
     start_year: int | None = Query(None),
     end_year: int | None = Query(None),
 ) -> dict[str, object]:
-    station_list = [s.strip() for s in stations.split(",") if s and s.strip()]
-    if not station_list:
-        raise HTTPException(status_code=422, detail="stations is required")
-    if start_year is not None and end_year is not None and start_year > end_year:
-        raise HTTPException(status_code=422, detail="start_year must be <= end_year")
+    station_list = parse_stations_param(stations)
+    validate_year_range(start_year, end_year)
 
     try:
-        available = station_set(settings.csv_path)
-        missing = sorted(set(station_list) - set(available))
-        if missing:
-            raise HTTPException(status_code=404, detail={"missing_stations": missing})
+        ensure_stations_exist(station_list)
         return monthly_data(
             settings.csv_path,
             stations=station_list,
@@ -51,17 +54,11 @@ def get_annual(
     end_year: int | None = Query(None),
     include_std: bool = Query(False),
 ) -> dict[str, object]:
-    station_list = [s.strip() for s in stations.split(",") if s and s.strip()]
-    if not station_list:
-        raise HTTPException(status_code=422, detail="stations is required")
-    if start_year is not None and end_year is not None and start_year > end_year:
-        raise HTTPException(status_code=422, detail="start_year must be <= end_year")
+    station_list = parse_stations_param(stations)
+    validate_year_range(start_year, end_year)
 
     try:
-        available = station_set(settings.csv_path)
-        missing = sorted(set(station_list) - set(available))
-        if missing:
-            raise HTTPException(status_code=404, detail={"missing_stations": missing})
+        ensure_stations_exist(station_list)
         return annual_data(
             settings.csv_path,
             stations=station_list,

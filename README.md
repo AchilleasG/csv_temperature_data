@@ -63,6 +63,11 @@ Or via compose:
 docker compose up --build
 ```
 
+Frontend (compose):
+
+- Open `http://127.0.0.1:5173`
+- API Swagger: `http://127.0.0.1:8000/api/docs`
+
 ## Tests
 
 ```bash

@@ -98,6 +98,24 @@ def test_monthly_data(tmp_path) -> None:
     }
 
 
+def test_data_range(tmp_path) -> None:
+    csv_path = tmp_path / "data.csv"
+    csv_path.write_text(
+        "Station Number;Year;Jan\n"
+        "123;1859;1.0\n"
+        "123;2019;2.0\n",
+        encoding="utf-8",
+    )
+
+    from csv_temperature_data.core.config import settings
+
+    settings.csv_path = str(csv_path)
+    client = TestClient(app)
+    resp = client.get("/api/data/range")
+    assert resp.status_code == 200
+    assert resp.json() == {"min_year": 1859, "max_year": 2019}
+
+
 def test_annual_data_with_std(tmp_path) -> None:
     csv_path = tmp_path / "data.csv"
     csv_path.write_text(

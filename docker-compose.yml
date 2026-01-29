@@ -8,3 +8,10 @@ services:
       - CSV_PATH=${CSV_PATH:-/app/data/temperature_data.csv}
     volumes:
       - ./data:/app/data:ro
+
+  web:
+    build: ./frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - api

@@ -3,7 +3,8 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Query
 
 from csv_temperature_data.core.config import settings
-from csv_temperature_data.core.csv_data import analytics_summary, station_set
+from csv_temperature_data.core.csv_data import analytics_summary
+from csv_temperature_data.api.utils import ensure_stations_exist, parse_stations_param, validate_year_range
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -23,17 +24,11 @@ def summary(
     start_year: int | None = Query(None),
     end_year: int | None = Query(None),
 ) -> dict[str, int | float | None]:
-    station_list = [s.strip() for s in stations.split(",") if s and s.strip()]
-    if not station_list:
-        raise HTTPException(status_code=422, detail="stations is required")
-    if start_year is not None and end_year is not None and start_year > end_year:
-        raise HTTPException(status_code=422, detail="start_year must be <= end_year")
+    station_list = parse_stations_param(stations)
+    validate_year_range(start_year, end_year)
 
     try:
-        available = station_set(settings.csv_path)
-        missing = sorted(set(station_list) - set(available))
-        if missing:
-            raise HTTPException(status_code=404, detail={"missing_stations": missing})
+        ensure_stations_exist(station_list)
         return analytics_summary(
             settings.csv_path,
             stations=station_list,
