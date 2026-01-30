@@ -13,6 +13,7 @@ venv/
 env/
 .env
 data/*.csv
+!data/temperature_data.csv
 !data/.gitkeep
 
 frontend/node_modules/
