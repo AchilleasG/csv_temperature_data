@@ -1,11 +1,36 @@
-# csv_temperature_data API
+# csv_temperature_data
 
-## Run locally
+Full-stack app for exploring historical monthly temperature data (°C) across multiple weather stations (1859–2019).
 
-Install deps:
+**Features**
+
+- Select one or more stations
+- Analytics summary (count/mean/std/min/max)
+- Plot modes:
+  - Monthly series
+  - Annual averages
+  - Annual averages with ±1σ overlay
+- Zoom controls (center year input + window slider), plus Plotly drag-zoom/pan
+
+## Run with Docker (recommended)
 
 ```bash
-python3 -m pip install -r requirements.txt
+docker compose up --build
+```
+
+- Web UI: `http://127.0.0.1:5173`
+- API docs (Swagger): `http://127.0.0.1:8000/api/docs`
+
+## Run locally (dev)
+
+### Backend (FastAPI)
+
+Install deps (use a virtualenv if desired):
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements.txt
 ```
 
 Configure CSV path (optional):
@@ -17,6 +42,22 @@ Run the server:
 ```bash
 python -m uvicorn csv_temperature_data.main:app --reload --app-dir src
 ```
+
+### Frontend (React + Vite)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The dev server proxies `/api/*` to `http://localhost:8000` by default. To override:
+
+```bash
+VITE_API_PROXY_TARGET=http://127.0.0.1:8000 npm run dev
+```
+
+## API examples
 
 Healthcheck:
 
@@ -48,29 +89,10 @@ Annual data:
 curl "http://127.0.0.1:8000/api/data/annual?stations=66062&start_year=1859&end_year=1862&include_std=true"
 ```
 
-## Docker
-
-Build and run:
-
-```bash
-docker build -t csv-temperature-data .
-docker run --rm -p 8000:8000 -v "$(pwd)/data:/app/data:ro" -e CSV_PATH=/app/data/temperature_data.csv csv-temperature-data
-```
-
-Or via compose:
-
-```bash
-docker compose up --build
-```
-
-Frontend (compose):
-
-- Open `http://127.0.0.1:5173`
-- API Swagger: `http://127.0.0.1:8000/api/docs`
-
 ## Tests
 
 ```bash
-python3 -m pip install -r requirements-dev.txt
-python3 -m pytest
+. .venv/bin/activate
+python -m pip install -r requirements-dev.txt
+python -m pytest
 ```
