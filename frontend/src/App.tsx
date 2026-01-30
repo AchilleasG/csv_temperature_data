@@ -1,16 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ApiError, getJson } from "./api";
+import { getJson } from "./api";
 import AnalyticsCard from "./components/AnalyticsCard";
 import StationPicker from "./components/StationPicker";
 import Visualization from "./components/Visualization";
 import ZoomControls from "./components/ZoomControls";
 import { AnnualResponse, AnalyticsSummary, DataRangeResponse, MonthlyResponse, StationsResponse } from "./types";
 import { STATION_PALETTE } from "./colors";
-
-function normalizeError(e: unknown): string {
-  if (e instanceof ApiError) return `${e.message}: ${JSON.stringify(e.detail)}`;
-  return String(e);
-}
+import { userFriendlyError } from "./errorMessages";
 
 export default function App() {
   const [yearBounds, setYearBounds] = useState(() => ({ minYear: 1859, maxYear: 2019 }));
@@ -37,7 +33,7 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
 
-    getJson<DataRangeResponse>("/api/data/range")
+    getJson<DataRangeResponse>("/api/data/range", { requestKey: "dataRange" })
       .then((range) => {
         if (cancelled) return;
         if (typeof range.min_year === "number" && typeof range.max_year === "number") {
@@ -50,17 +46,17 @@ export default function App() {
       })
       .catch((e) => {
         if (cancelled) return;
-        setError(normalizeError(e));
+        setError(userFriendlyError(e));
       })
       .finally(() => {
-        getJson<StationsResponse>("/api/stations")
+        getJson<StationsResponse>("/api/stations", { requestKey: "stations" })
           .then((data) => {
             if (cancelled) return;
             setStations(data.stations);
           })
           .catch((e) => {
             if (cancelled) return;
-            setError(normalizeError(e));
+            setError(userFriendlyError(e));
           });
       });
     return () => {
@@ -106,18 +102,20 @@ export default function App() {
   const targetKey = useMemo(() => `${baseKey}|${mode}|${includeStd ? "std1" : "std0"}`, [baseKey, mode, includeStd]);
 
   const fetchSummary = useCallback(async () => {
-    return await getJson<AnalyticsSummary>(`/api/analytics/summary?${baseParams.toString()}`);
+    return await getJson<AnalyticsSummary>(`/api/analytics/summary?${baseParams.toString()}`, {
+      requestKey: "analyticsSummary"
+    });
   }, [baseParams]);
 
   const fetchMonthly = useCallback(async () => {
-    return await getJson<MonthlyResponse>(`/api/data/monthly?${baseParams.toString()}`);
+    return await getJson<MonthlyResponse>(`/api/data/monthly?${baseParams.toString()}`, { requestKey: "monthlyData" });
   }, [baseParams]);
 
   const fetchAnnual = useCallback(
     async (std: boolean) => {
       const annualParams = new URLSearchParams(baseParams);
       annualParams.set("include_std", std ? "true" : "false");
-      return await getJson<AnnualResponse>(`/api/data/annual?${annualParams.toString()}`);
+      return await getJson<AnnualResponse>(`/api/data/annual?${annualParams.toString()}`, { requestKey: "annualData" });
     },
     [baseParams]
   );
@@ -141,7 +139,7 @@ export default function App() {
       }
       setLastLoadedKey(targetKey);
     } catch (e) {
-      setError(normalizeError(e));
+      setError(userFriendlyError(e));
     } finally {
       setLoading(false);
     }
@@ -168,7 +166,7 @@ export default function App() {
         setLastLoadedKey(`${baseKey}|${nextMode}|${includeStd ? "std1" : "std0"}`);
         setMode(nextMode);
       } catch (e) {
-        setError(normalizeError(e));
+        setError(userFriendlyError(e));
       } finally {
         setLoading(false);
       }
@@ -205,7 +203,7 @@ export default function App() {
         setIncludeStd(next);
         setLastLoadedKey(`${baseKey}|annual|${next ? "std1" : "std0"}`);
       } catch (e) {
-        setError(normalizeError(e));
+        setError(userFriendlyError(e));
       } finally {
         setLoading(false);
       }
